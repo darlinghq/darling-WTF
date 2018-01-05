@@ -5,6 +5,9 @@ set(CMAKE_CXX_STANDARD 14)
 include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}/wtf
+	${CMAKE_CURRENT_SOURCE_DIR}/wtf/spi/darwin
+	${CMAKE_CURRENT_SOURCE_DIR}/wtf/text
+	${CMAKE_CURRENT_SOURCE_DIR}/wtf/text/icu
 	${CMAKE_CURRENT_SOURCE_DIR}/include/wtf
 	${CMAKE_CURRENT_SOURCE_DIR}/include/wtf/spi/darwin
 	${CMAKE_CURRENT_SOURCE_DIR}/include/wtf/text
