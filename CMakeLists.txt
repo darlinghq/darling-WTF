@@ -8,7 +8,7 @@ include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/include/wtf/spi/darwin
 	${CMAKE_CURRENT_SOURCE_DIR}/include/wtf/text
 	${CMAKE_CURRENT_SOURCE_DIR}/include/wtf/text/icu
-	${CMAKE_CURRENT_BINARY_DIR}
+	${CMAKE_CURRENT_BINARY_DIR}/wtf/mac
 )
 
 mig(wtf/mac/MachExceptions.defs)
@@ -62,8 +62,8 @@ add_darling_static_library(WTF FAT
 	wtf/Lock.cpp
 	wtf/LockedPrintStream.cpp
 	wtf/mac/MachExceptions.defs
-	${CMAKE_CURRENT_BINARY_DIR}/MachExceptionsUser.c
-	${CMAKE_CURRENT_BINARY_DIR}/MachExceptionsServer.c
+	${CMAKE_CURRENT_BINARY_DIR}/wtf/mac/MachExceptionsUser.c
+	${CMAKE_CURRENT_BINARY_DIR}/wtf/mac/MachExceptionsServer.c
 	wtf/MainThread.cpp
 	wtf/mac/MainThreadMac.mm
 	wtf/MD5.cpp
