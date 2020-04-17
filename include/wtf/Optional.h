@@ -295,12 +295,14 @@ struct nullopt_t
 constexpr nullopt_t nullopt{nullopt_t::init()};
 
 
+#if 0
 // 20.5.8, class bad_optional_access
 class bad_optional_access : public std::logic_error {
 public:
   explicit bad_optional_access(const std::string& what_arg) : std::logic_error{what_arg} {}
   explicit bad_optional_access(const char* what_arg) : std::logic_error{what_arg} {}
 };
+#endif
 
 
 template <class T>
