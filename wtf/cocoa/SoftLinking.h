@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007, 2008, 2011-2015 Apple Inc. All rights reserved.
+ * Copyright (C) 2007-2019 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -24,9 +24,10 @@
 
 #pragma once
 
-#import <wtf/Assertions.h>
 #import <dlfcn.h>
 #import <objc/runtime.h>
+#import <wtf/Assertions.h>
+#import <wtf/FileSystem.h>
 
 #pragma mark - Soft-link macros for use within a single source file
 
@@ -63,6 +64,19 @@
         return frameworkLibrary; \
     }
 
+#if USE(REALPATH_FOR_DLOPEN_PREFLIGHT)
+#define DLOPEN_PREFLIGHT(path) dlopen_preflight(FileSystem::realPath(path##_s).utf8().data())
+#else
+#define DLOPEN_PREFLIGHT(path) dlopen_preflight(path)
+#endif
+
+#define SOFT_LINK_FRAMEWORK_OPTIONAL_PREFLIGHT(framework) \
+    static bool framework##LibraryIsAvailable() \
+    { \
+        static bool frameworkLibraryIsAvailable = DLOPEN_PREFLIGHT("/System/Library/Frameworks/" #framework ".framework/" #framework); \
+        return frameworkLibraryIsAvailable; \
+    }
+
 #define SOFT_LINK_FRAMEWORK_OPTIONAL(framework) \
     static void* framework##Library() \
     { \
@@ -74,19 +88,6 @@
     static void* framework##Library() \
     { \
         static void* frameworkLibrary = dlopen("/System/Library/PrivateFrameworks/" #framework ".framework/" #framework, RTLD_NOW); \
-        return frameworkLibrary; \
-    }
-
-#define SOFT_LINK_STAGED_FRAMEWORK(framework, unstagedLocation, version) \
-    static void* framework##Library() \
-    { \
-        static void* frameworkLibrary = ^{ \
-            void* result = dlopen("/System/Library/" #unstagedLocation "/" #framework ".framework/Versions/" #version "/" #framework, RTLD_LAZY); \
-            if (!result) \
-                result = dlopen("/System/Library/StagedFrameworks/Safari/" #framework ".framework/Versions/" #version "/" #framework, RTLD_LAZY); \
-            RELEASE_ASSERT_WITH_MESSAGE(result, "%s", dlerror()); \
-            return result; \
-        }(); \
         return frameworkLibrary; \
     }
 
@@ -115,7 +116,7 @@
         return softLink##functionName parameterNames; \
     } \
     \
-    inline resultType functionName parameterDeclarations \
+    inline __attribute__((__always_inline__)) resultType functionName parameterDeclarations \
     { \
         return softLink##functionName parameterNames; \
     }
@@ -139,7 +140,7 @@
         return loaded; \
     } \
     \
-    __attribute__((visibility("hidden"))) resultType functionName parameterDeclarations \
+    inline __attribute__((__always_inline__)) __attribute__((visibility("hidden"))) resultType functionName parameterDeclarations \
     { \
         ASSERT(softLink##functionName); \
         return softLink##functionName parameterNames; \
@@ -263,7 +264,7 @@
     { \
         void* constant = dlsym(framework##Library(), #name); \
         RELEASE_ASSERT_WITH_MESSAGE(constant, "%s", dlerror()); \
-        constant##name = *static_cast<type*>(constant); \
+        constant##name = *static_cast<type const *>(constant); \
         get##name = name##Function; \
         return constant##name; \
     }
@@ -290,7 +291,7 @@
         void* constant = dlsym(framework##Library(), #name); \
         if (!constant) \
             return false; \
-        constant##name = *static_cast<type*>(constant); \
+        constant##name = *static_cast<type const *>(constant); \
         get##name = name##Function; \
         return true; \
     }
@@ -298,6 +299,31 @@
 #pragma mark - Soft-link macros for sharing across multiple source files
 
 // See Source/WebCore/platform/cf/CoreMediaSoftLink.{cpp,h} for an example implementation.
+
+
+#define SOFT_LINK_LIBRARY_FOR_HEADER(functionNamespace, lib) \
+    namespace functionNamespace { \
+    extern void* lib##Library(bool isOptional = false); \
+    inline bool is##lib##LibaryAvailable() { \
+        return lib##Library(true) != nullptr; \
+    } \
+    }
+
+#define SOFT_LINK_LIBRARY_FOR_SOURCE(functionNamespace, lib) \
+    namespace functionNamespace { \
+    void* lib##Library(bool isOptional); \
+    void* lib##Library(bool isOptional) \
+    { \
+        static void* library; \
+        static dispatch_once_t once; \
+        dispatch_once(&once, ^{ \
+            library = dlopen("/usr/lib/" #lib ".dylib", RTLD_NOW); \
+            if (!isOptional) \
+                RELEASE_ASSERT_WITH_MESSAGE(library, "%s", dlerror()); \
+        }); \
+        return library; \
+    } \
+    }
 
 #define SOFT_LINK_FRAMEWORK_FOR_HEADER(functionNamespace, framework) \
     namespace functionNamespace { \
@@ -308,9 +334,9 @@
     } \
     }
 
-#define SOFT_LINK_FRAMEWORK_FOR_SOURCE(functionNamespace, framework) \
+#define SOFT_LINK_FRAMEWORK_FOR_SOURCE_WITH_EXPORT(functionNamespace, framework, export) \
     namespace functionNamespace { \
-    void* framework##Library(bool isOptional = false); \
+    export void* framework##Library(bool isOptional = false); \
     void* framework##Library(bool isOptional) \
     { \
         static void* frameworkLibrary; \
@@ -324,9 +350,12 @@
     } \
     }
 
-#define SOFT_LINK_PRIVATE_FRAMEWORK_FOR_SOURCE(functionNamespace, framework) \
+#define SOFT_LINK_FRAMEWORK_FOR_SOURCE(functionNamespace, framework) \
+    SOFT_LINK_FRAMEWORK_FOR_SOURCE_WITH_EXPORT(functionNamespace, framework, )
+
+#define SOFT_LINK_PRIVATE_FRAMEWORK_FOR_SOURCE_WITH_EXPORT(functionNamespace, framework, export) \
     namespace functionNamespace { \
-    void* framework##Library(bool isOptional = false); \
+    export void* framework##Library(bool isOptional = false); \
     void* framework##Library(bool isOptional) \
     { \
         static void* frameworkLibrary; \
@@ -340,22 +369,25 @@
     } \
     }
 
-#define SOFT_LINK_CLASS_FOR_HEADER(functionNamespace, framework, className) \
+#define SOFT_LINK_PRIVATE_FRAMEWORK_FOR_SOURCE(functionNamespace, framework) \
+    SOFT_LINK_PRIVATE_FRAMEWORK_FOR_SOURCE_WITH_EXPORT(functionNamespace, framework, )
+
+#define SOFT_LINK_CLASS_FOR_HEADER(functionNamespace, className) \
     @class className; \
     namespace functionNamespace { \
-    extern Class (*get_##framework##_##className##Class)(); \
+    extern Class (*get##className##Class)(); \
     className *alloc##className##Instance(); \
     inline className *alloc##className##Instance() \
     { \
-        return [get_##framework##_##className##Class() alloc]; \
+        return [get##className##Class() alloc]; \
     } \
     }
 
-#define SOFT_LINK_CLASS_FOR_SOURCE(functionNamespace, framework, className) \
+#define SOFT_LINK_CLASS_FOR_SOURCE_WITH_EXPORT_AND_IS_OPTIONAL(functionNamespace, framework, className, export, isOptional) \
     @class className; \
     namespace functionNamespace { \
     static Class init##className(); \
-    Class (*get_##framework##_##className##Class)() = init##className; \
+    export Class (*get##className##Class)() = init##className; \
     static Class class##className; \
     \
     static Class className##Function() \
@@ -367,29 +399,39 @@
     { \
         static dispatch_once_t once; \
         dispatch_once(&once, ^{ \
-            framework##Library(); \
+            framework##Library(isOptional); \
             class##className = objc_getClass(#className); \
-            RELEASE_ASSERT(class##className); \
-            get_##framework##_##className##Class = className##Function; \
+            if (!isOptional) \
+                RELEASE_ASSERT(class##className); \
+            get##className##Class = className##Function; \
         }); \
         return class##className; \
     } \
     }
 
+#define SOFT_LINK_IS_OPTIONAL true
+#define SOFT_LINK_IS_NOT_OPTIONAL false
+
+#define SOFT_LINK_CLASS_FOR_SOURCE_WITH_EXPORT(functionNamespace, framework, className, export) \
+    SOFT_LINK_CLASS_FOR_SOURCE_WITH_EXPORT_AND_IS_OPTIONAL(functionNamespace, framework, className, export, SOFT_LINK_IS_NOT_OPTIONAL)
+
+#define SOFT_LINK_CLASS_FOR_SOURCE_OPTIONAL_WITH_EXPORT(functionNamespace, framework, className, export) \
+    SOFT_LINK_CLASS_FOR_SOURCE_WITH_EXPORT_AND_IS_OPTIONAL(functionNamespace, framework, className, export, SOFT_LINK_IS_OPTIONAL)
+
+#define SOFT_LINK_CLASS_FOR_SOURCE(functionNamespace, framework, className) \
+    SOFT_LINK_CLASS_FOR_SOURCE_WITH_EXPORT_AND_IS_OPTIONAL(functionNamespace, framework, className, , SOFT_LINK_IS_NOT_OPTIONAL)
+
+#define SOFT_LINK_CLASS_FOR_SOURCE_OPTIONAL(functionNamespace, framework, className) \
+    SOFT_LINK_CLASS_FOR_SOURCE_WITH_EXPORT_AND_IS_OPTIONAL(functionNamespace, framework, className, , SOFT_LINK_IS_OPTIONAL)
+
 #define SOFT_LINK_CONSTANT_FOR_HEADER(functionNamespace, framework, variableName, variableType) \
-    WTF_EXTERN_C_BEGIN \
-    extern const variableType variableName; \
-    WTF_EXTERN_C_END \
     namespace functionNamespace { \
     variableType get_##framework##_##variableName(); \
     }
 
-#define SOFT_LINK_CONSTANT_FOR_SOURCE(functionNamespace, framework, variableName, variableType) \
-    WTF_EXTERN_C_BEGIN \
-    extern const variableType variableName; \
-    WTF_EXTERN_C_END \
+#define SOFT_LINK_CONSTANT_FOR_SOURCE_WITH_EXPORT(functionNamespace, framework, variableName, variableType, export) \
     namespace functionNamespace { \
-    variableType get_##framework##_##variableName(); \
+    export variableType get_##framework##_##variableName(); \
     variableType get_##framework##_##variableName() \
     { \
         static variableType constant##framework##variableName; \
@@ -397,26 +439,23 @@
         dispatch_once(&once, ^{ \
             void* constant = dlsym(framework##Library(), #variableName); \
             RELEASE_ASSERT_WITH_MESSAGE(constant, "%s", dlerror()); \
-            constant##framework##variableName = *static_cast<variableType*>(constant); \
+            constant##framework##variableName = *static_cast<variableType const *>(constant); \
         }); \
         return constant##framework##variableName; \
     } \
     }
 
+#define SOFT_LINK_CONSTANT_FOR_SOURCE(functionNamespace, framework, variableName, variableType) \
+    SOFT_LINK_CONSTANT_FOR_SOURCE_WITH_EXPORT(functionNamespace, framework, variableName, variableType, )
+
 #define SOFT_LINK_CONSTANT_MAY_FAIL_FOR_HEADER(functionNamespace, framework, variableName, variableType) \
-    WTF_EXTERN_C_BEGIN \
-    extern const variableType variableName; \
-    WTF_EXTERN_C_END \
     namespace functionNamespace { \
     bool canLoad_##framework##_##variableName(); \
     bool init_##framework##_##variableName(); \
     variableType get_##framework##_##variableName(); \
     }
 
-#define SOFT_LINK_CONSTANT_MAY_FAIL_FOR_SOURCE(functionNamespace, framework, variableName, variableType) \
-    WTF_EXTERN_C_BEGIN \
-    extern const variableType variableName; \
-    WTF_EXTERN_C_END \
+#define SOFT_LINK_CONSTANT_MAY_FAIL_FOR_SOURCE_WITH_EXPORT(functionNamespace, framework, variableName, variableType, export) \
     namespace functionNamespace { \
     static variableType constant##framework##variableName; \
     bool init_##framework##_##variableName(); \
@@ -425,21 +464,24 @@
         void* constant = dlsym(framework##Library(), #variableName); \
         if (!constant) \
             return false; \
-        constant##framework##variableName = *static_cast<variableType*>(constant); \
+        constant##framework##variableName = *static_cast<variableType const *>(constant); \
         return true; \
     } \
-    bool canLoad_##framework##_##variableName(); \
+    export bool canLoad_##framework##_##variableName(); \
     bool canLoad_##framework##_##variableName() \
     { \
         static bool loaded = init_##framework##_##variableName(); \
         return loaded; \
     } \
-    variableType get_##framework##_##variableName(); \
+    export variableType get_##framework##_##variableName(); \
     variableType get_##framework##_##variableName() \
     { \
         return constant##framework##variableName; \
     } \
     }
+
+#define SOFT_LINK_CONSTANT_MAY_FAIL_FOR_SOURCE(functionNamespace, framework, variableName, variableType) \
+    SOFT_LINK_CONSTANT_MAY_FAIL_FOR_SOURCE_WITH_EXPORT(functionNamespace, framework, variableName, variableType, )
 
 #define SOFT_LINK_FUNCTION_FOR_HEADER(functionNamespace, framework, functionName, resultType, parameterDeclarations, parameterNames) \
     WTF_EXTERN_C_BEGIN \
@@ -451,15 +493,19 @@
     { \
         return softLink##framework##functionName parameterNames; \
     } \
+    } \
+    inline __attribute__((__always_inline__)) resultType functionName parameterDeclarations \
+    {\
+        return functionNamespace::softLink##framework##functionName parameterNames; \
     }
 
-#define SOFT_LINK_FUNCTION_FOR_SOURCE(functionNamespace, framework, functionName, resultType, parameterDeclarations, parameterNames) \
+#define SOFT_LINK_FUNCTION_FOR_SOURCE_WITH_EXPORT(functionNamespace, framework, functionName, resultType, parameterDeclarations, parameterNames, export) \
     WTF_EXTERN_C_BEGIN \
     resultType functionName parameterDeclarations; \
     WTF_EXTERN_C_END \
     namespace functionNamespace { \
     static resultType init##framework##functionName parameterDeclarations; \
-    resultType (*softLink##framework##functionName) parameterDeclarations = init##framework##functionName; \
+    export resultType(*softLink##framework##functionName) parameterDeclarations = init##framework##functionName; \
     static resultType init##framework##functionName parameterDeclarations \
     { \
         static dispatch_once_t once; \
@@ -470,6 +516,9 @@
         return softLink##framework##functionName parameterNames; \
     } \
     }
+
+#define SOFT_LINK_FUNCTION_FOR_SOURCE(functionNamespace, framework, functionName, resultType, parameterDeclarations, parameterNames) \
+    SOFT_LINK_FUNCTION_FOR_SOURCE_WITH_EXPORT(functionNamespace, framework, functionName, resultType, parameterDeclarations, parameterNames, )
 
 #define SOFT_LINK_FUNCTION_MAY_FAIL_FOR_HEADER(functionNamespace, framework, functionName, resultType, parameterDeclarations, parameterNames) \
     WTF_EXTERN_C_BEGIN \
@@ -537,5 +586,32 @@
             get_##framework##_##variableName = pointer##framework##variableName##Function; \
         }); \
         return pointer##framework##variableName; \
+    } \
+    }
+
+#define SOFT_LINK_VARIABLE_FOR_HEADER(functionNamespace, framework, variableName, variableType) \
+    WTF_EXTERN_C_BEGIN \
+    extern variableType variableName; \
+    WTF_EXTERN_C_END \
+    namespace functionNamespace { \
+    variableType * get_##framework##_##variableName(); \
+    }
+
+#define SOFT_LINK_VARIABLE_FOR_SOURCE(functionNamespace, framework, variableName, variableType) \
+    WTF_EXTERN_C_BEGIN \
+    extern variableType variableName; \
+    WTF_EXTERN_C_END \
+    namespace functionNamespace { \
+    variableType * get_##framework##_##variableName(); \
+    variableType * get_##framework##_##variableName() \
+    { \
+        static variableType * variable##framework##variableName; \
+        static dispatch_once_t once; \
+        dispatch_once(&once, ^{ \
+            void* variable = dlsym(framework##Library(), #variableName); \
+            RELEASE_ASSERT_WITH_MESSAGE(variable, "%s", dlerror()); \
+            variable##framework##variableName = static_cast<variableType *>(variable); \
+        }); \
+        return variable##framework##variableName; \
     } \
     }

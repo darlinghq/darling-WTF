@@ -28,6 +28,7 @@
 #if USE(PTHREADS) && HAVE(MACHINE_CONTEXT)
 
 #include <signal.h>
+#include <tuple>
 #include <wtf/Function.h>
 #include <wtf/Optional.h>
 #include <wtf/PlatformRegisters.h>
@@ -48,12 +49,12 @@ enum class Signal {
     Unknown = NumberOfSignals
 };
 
-inline std::tuple<int, std::optional<int>> toSystemSignal(Signal signal)
+inline std::tuple<int, Optional<int>> toSystemSignal(Signal signal)
 {
     switch (signal) {
     case Signal::BadAccess: return std::make_tuple(SIGSEGV, SIGBUS);
-    case Signal::Ill: return std::make_tuple(SIGILL, std::nullopt);
-    case Signal::Usr: return std::make_tuple(SIGILL, std::nullopt);
+    case Signal::Ill: return std::make_tuple(SIGILL, WTF::nullopt);
+    case Signal::Usr: return std::make_tuple(SIGILL, WTF::nullopt);
     default: break;
     }
     RELEASE_ASSERT_NOT_REACHED();
@@ -91,8 +92,7 @@ WTF_EXPORT_PRIVATE void installSignalHandler(Signal, SignalHandler&&);
 
 #if HAVE(MACH_EXCEPTIONS)
 class Thread;
-void registerThreadForMachExceptionHandling(Thread*);
-void unregisterThreadForMachExceptionHandling(Thread*);
+void registerThreadForMachExceptionHandling(Thread&);
 
 void handleSignalsWithMach();
 #endif // HAVE(MACH_EXCEPTIONS)
@@ -101,7 +101,6 @@ void handleSignalsWithMach();
 
 #if HAVE(MACH_EXCEPTIONS)
 using WTF::registerThreadForMachExceptionHandling;
-using WTF::unregisterThreadForMachExceptionHandling;
 using WTF::handleSignalsWithMach;
 #endif // HAVE(MACH_EXCEPTIONS)
 
