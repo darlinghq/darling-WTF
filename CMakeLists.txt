@@ -1,145 +1,219 @@
 project(WTF)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
+
+# shuts up a *ton* of repeated warnings
+add_compile_options(
+	-Wno-gcc-compat
+	-Wno-implicit-int-float-conversion
+)
 
 include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}
+
 	${CMAKE_CURRENT_SOURCE_DIR}/wtf
-	${CMAKE_CURRENT_SOURCE_DIR}/wtf/spi/darwin
+	${CMAKE_CURRENT_SOURCE_DIR}/wtf/cf
+	${CMAKE_CURRENT_SOURCE_DIR}/wtf/cocoa
+	${CMAKE_CURRENT_SOURCE_DIR}/wtf/dtoa
+	${CMAKE_CURRENT_SOURCE_DIR}/wtf/ios
+	${CMAKE_CURRENT_SOURCE_DIR}/wtf/mac
+	${CMAKE_CURRENT_SOURCE_DIR}/wtf/persistence
+	${CMAKE_CURRENT_SOURCE_DIR}/wtf/posix
 	${CMAKE_CURRENT_SOURCE_DIR}/wtf/text
+	${CMAKE_CURRENT_SOURCE_DIR}/wtf/text/cf
+	${CMAKE_CURRENT_SOURCE_DIR}/wtf/text/cocoa
 	${CMAKE_CURRENT_SOURCE_DIR}/wtf/text/icu
-	${CMAKE_CURRENT_SOURCE_DIR}/include/wtf
-	${CMAKE_CURRENT_SOURCE_DIR}/include/wtf/spi/darwin
-	${CMAKE_CURRENT_SOURCE_DIR}/include/wtf/text
-	${CMAKE_CURRENT_SOURCE_DIR}/include/wtf/text/icu
+	${CMAKE_CURRENT_SOURCE_DIR}/wtf/threads
+	${CMAKE_CURRENT_SOURCE_DIR}/wtf/unicode
+	${CMAKE_CURRENT_SOURCE_DIR}/wtf/unicode/icu
+
+	# technically, we don't need this
+	# the SDK has symlinks for these already
+	${CMAKE_CURRENT_SOURCE_DIR}/include
+
 	${CMAKE_CURRENT_BINARY_DIR}/wtf/mac
 )
 
 mig(wtf/mac/MachExceptions.defs)
 
-add_darling_static_library(WTF FAT
-	SOURCES
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/${DARLING_SDK_RELATIVE_PATH}/usr/include/wtf/mac")
+file(CREATE_LINK
+	"${DARLING_ROOT_RELATIVE_TO_SDK}/../../../src/external/wtf/mac/MachExceptions.h"
+	"${CMAKE_BINARY_DIR}/${DARLING_SDK_RELATIVE_PATH}/usr/include/wtf/mac/MachExceptions.h"
+	SYMBOLIC
+)
+file(CREATE_LINK
+	"${DARLING_ROOT_RELATIVE_TO_SDK}/../../../src/external/wtf/mac/MachExceptionsServer.h"
+	"${CMAKE_BINARY_DIR}/${DARLING_SDK_RELATIVE_PATH}/usr/include/wtf/mac/MachExceptionsServer.h"
+	SYMBOLIC
+)
+
+add_darling_static_library(WTF FAT SOURCES
+	wtf/ASCIICType.cpp
 	wtf/Assertions.cpp
-	wtf/text/AtomicString.cpp
-	wtf/text/AtomicStringImpl.cpp
-	wtf/text/cf/AtomicStringImplCF.cpp
-	wtf/text/AtomicStringTable.cpp
-	wtf/AutodrainedPoolMac.mm
 	wtf/AutomaticThread.cpp
-	wtf/text/Base64.cpp
-	wtf/dtoa/bignum-dtoa.cc
-	wtf/dtoa/bignum.cc
-	wtf/threads/BinarySemaphore.cpp
 	wtf/BitVector.cpp
 	wtf/BlockObjCExceptions.mm
-	wtf/dtoa/cached-powers.cc
 	wtf/ClockType.cpp
-	wtf/persistence/Coders.cpp
-	wtf/unicode/CollatorDefault.cpp
-	wtf/unicode/icu/CollatorICU.cpp
 	wtf/CompilationThread.cpp
+	wtf/ConcurrentPtrHashSet.cpp
+	wtf/CountingLock.cpp
 	wtf/CPUTime.cpp
-	wtf/cocoa/CPUTimeCocoa.mm
 	wtf/CrossThreadCopier.cpp
+	wtf/CrossThreadTaskHandler.cpp
 	wtf/CryptographicallyRandomNumber.cpp
 	wtf/CryptographicUtilities.cpp
-	wtf/text/CString.cpp
 	wtf/CurrentTime.cpp
 	wtf/DataLog.cpp
 	wtf/DateMath.cpp
-	wtf/DecimalNumber.cpp
-	wtf/persistence/Decoder.cpp
-	wtf/mac/DeprecatedSymbolsUsedBySafari.mm
-	wtf/dtoa/diy-fp.cc
-	wtf/dtoa/double-conversion.cc
 	wtf/dtoa.cpp
-	wtf/persistence/Encoder.cpp
-	wtf/dtoa/fast-dtoa.cc
 	wtf/FastBitVector.cpp
 	wtf/FastMalloc.cpp
 	wtf/FilePrintStream.cpp
-	wtf/dtoa/fixed-dtoa.cc
+	wtf/FileSystem.cpp
 	wtf/FunctionDispatcher.cpp
+	wtf/Gigacage.cpp
 	wtf/GlobalVersion.cpp
 	wtf/GregorianDateTime.cpp
 	wtf/HashTable.cpp
+	wtf/HexNumber.cpp
+	wtf/JSONValues.cpp
+	wtf/JSValueMalloc.cpp
+	wtf/Language.cpp
 	wtf/Lock.cpp
 	wtf/LockedPrintStream.cpp
-	wtf/mac/MachExceptions.defs
-	${CMAKE_CURRENT_BINARY_DIR}/wtf/mac/MachExceptionsUser.c
-	${CMAKE_CURRENT_BINARY_DIR}/wtf/mac/MachExceptionsServer.c
+	wtf/Logger.cpp
 	wtf/MainThread.cpp
-	wtf/mac/MainThreadMac.mm
 	wtf/MD5.cpp
 	wtf/MediaTime.cpp
-	wtf/cocoa/MemoryFootprintCocoa.cpp
 	wtf/MemoryPressureHandler.cpp
-	wtf/cocoa/MemoryPressureHandlerCocoa.mm
 	wtf/MetaAllocator.cpp
 	wtf/MonotonicTime.cpp
 	wtf/NumberOfCores.cpp
-	wtf/OSAllocatorPosix.cpp
+	wtf/ObjectIdentifier.cpp
 	wtf/OSRandomSource.cpp
 	wtf/PageBlock.cpp
 	wtf/ParallelHelperPool.cpp
 	wtf/ParkingLot.cpp
-	wtf/PlatformUserPreferredLanguagesMac.mm
+	wtf/PlatformRegisters.cpp
 	wtf/PrintStream.cpp
+	wtf/ProcessPrivilege.cpp
+	wtf/PtrTag.cpp
 	wtf/RAMSize.cpp
 	wtf/RandomDevice.cpp
 	wtf/RandomNumber.cpp
+	wtf/ReadWriteLock.cpp
 	wtf/RefCountedLeakCounter.cpp
 	wtf/RunLoop.cpp
-	wtf/cf/RunLoopCF.cpp
-	wtf/RunLoopTimerCF.cpp
-	wtf/SchedulePairCF.cpp
-	wtf/SchedulePairMac.mm
 	wtf/Seconds.cpp
 	wtf/SHA1.cpp
-	wtf/threads/Signals.cpp
 	wtf/SixCharacterHash.cpp
 	wtf/SizeLimits.cpp
 	wtf/StackBounds.cpp
+	wtf/StackPointer.cpp
 	wtf/StackStats.cpp
 	wtf/StackTrace.cpp
-	wtf/text/StringBuilder.cpp
-	wtf/text/cf/StringCF.cpp
-	wtf/text/StringImpl.cpp
-	wtf/text/cf/StringImplCF.cpp
-	wtf/text/mac/StringImplMac.mm
-	wtf/text/mac/StringMac.mm
 	wtf/StringPrintStream.cpp
-	wtf/text/StringView.cpp
-	wtf/text/cf/StringViewCF.cpp
-	wtf/text/mac/StringViewObjC.mm
+	wtf/ThreadGroup.cpp
+	wtf/Threading.cpp
+	wtf/ThreadMessage.cpp
+	wtf/TimeWithDynamicClockType.cpp
+	wtf/TimingScope.cpp
+	wtf/URL.cpp
+	wtf/URLHelpers.cpp
+	wtf/URLParser.cpp
+	wtf/UUID.cpp
+	wtf/WallTime.cpp
+	wtf/WordLock.cpp
+	wtf/WorkerPool.cpp
+	wtf/WorkQueue.cpp
+	wtf/WTFAssertions.cpp
+
+	wtf/cf/CFURLExtras.cpp
+	wtf/cf/FileSystemCF.cpp
+	wtf/cf/LanguageCF.cpp
+	wtf/cf/RunLoopCF.cpp
+	wtf/cf/RunLoopTimerCF.cpp
+	wtf/cf/SchedulePairCF.cpp
+	wtf/cf/URLCF.cpp
+
+	wtf/cocoa/AutodrainedPool.cpp
+	wtf/cocoa/CPUTimeCocoa.cpp
+	wtf/cocoa/Entitlements.mm
+	wtf/cocoa/FileSystemCocoa.mm
+	wtf/cocoa/MachSendRight.cpp
+	wtf/cocoa/MainThreadCocoa.mm
+	wtf/cocoa/MemoryFootprintCocoa.cpp
+	wtf/cocoa/MemoryPressureHandlerCocoa.mm
+	wtf/cocoa/NSURLExtras.mm
+	wtf/cocoa/URLCocoa.mm
+	wtf/cocoa/WorkQueueCocoa.cpp
+
+	wtf/dtoa/bignum-dtoa.cc
+	wtf/dtoa/bignum.cc
+	wtf/dtoa/cached-powers.cc
+	wtf/dtoa/diy-fp.cc
+	wtf/dtoa/double-conversion.cc
+	wtf/dtoa/fast-dtoa.cc
+	wtf/dtoa/fixed-dtoa.cc
 	wtf/dtoa/strtod.cc
+
+	wtf/ios/WebCoreThread.cpp
+
+	wtf/mac/DeprecatedSymbolsUsedBySafari.mm
+	wtf/mac/FileSystemMac.mm
+	wtf/mac/SchedulePairMac.mm
+
+	${CMAKE_CURRENT_BINARY_DIR}/wtf/mac/MachExceptionsServer.c
+	${CMAKE_CURRENT_BINARY_DIR}/wtf/mac/MachExceptionsUser.c
+
+	wtf/persistence/PersistentCoders.cpp
+	wtf/persistence/PersistentDecoder.cpp
+	wtf/persistence/PersistentEncoder.cpp
+
+	wtf/posix/FileSystemPOSIX.cpp
+	wtf/posix/OSAllocatorPOSIX.cpp
+	wtf/posix/ThreadingPOSIX.cpp
+
+	wtf/text/ASCIILiteral.cpp
+	wtf/text/AtomString.cpp
+	wtf/text/AtomStringImpl.cpp
+	wtf/text/AtomStringTable.cpp
+	wtf/text/Base64.cpp
+	wtf/text/CString.cpp
+	wtf/text/ExternalStringImpl.cpp
+	wtf/text/LineEnding.cpp
+	wtf/text/StringBuilder.cpp
+	wtf/text/StringBuilderJSON.cpp
+	wtf/text/StringImpl.cpp
+	wtf/text/StringView.cpp
 	wtf/text/SymbolImpl.cpp
 	wtf/text/SymbolRegistry.cpp
 	wtf/text/TextBreakIterator.cpp
-	wtf/text/mac/TextBreakIteratorInternalICUMac.mm
-	wtf/ThreadHolder.cpp
-	wtf/ThreadHolderPthreads.cpp
-	wtf/Threading.cpp
-	wtf/ThreadingPthreads.cpp
-	wtf/ThreadMessage.cpp
-	wtf/TimeWithDynamicClockType.cpp
+	wtf/text/TextStream.cpp
+	wtf/text/WTFString.cpp
+
+	wtf/text/cf/AtomStringImplCF.cpp
+	wtf/text/cf/StringCF.cpp
+	wtf/text/cf/StringImplCF.cpp
+	wtf/text/cf/StringViewCF.cpp
+
+	wtf/text/cocoa/StringCocoa.mm
+	wtf/text/cocoa/StringImplCocoa.mm
+	wtf/text/cocoa/StringViewCocoa.mm
+	wtf/text/cocoa/TextBreakIteratorInternalICUCocoa.cpp
+	wtf/text/cocoa/TextStreamCocoa.mm
+
 	wtf/text/icu/UTextProvider.cpp
 	wtf/text/icu/UTextProviderLatin1.cpp
 	wtf/text/icu/UTextProviderUTF16.cpp
-	wtf/unicode/UTF8.cpp
-	wtf/UUID.cpp
-	wtf/WallTime.cpp
-	wtf/ios/WebCoreThread.cpp
-	wtf/WordLock.cpp
-	wtf/WorkQueue.cpp
-	wtf/cocoa/WorkQueueCocoa.cpp
-	wtf/text/WTFString.cpp
-	wtf/WTFThreadData.cpp
+
+	wtf/threads/BinarySemaphore.cpp
+	wtf/threads/Signals.cpp
+
+	wtf/unicode/CollatorDefault.cpp
+	wtf/unicode/UTF8Conversion.cpp
+
+	wtf/unicode/icu/CollatorICU.cpp
 )
 target_link_libraries(WTF bmalloc)
-
-add_darling_static_library(mbmalloc FAT
-	SOURCES
-		wtf/mbmalloc.cpp
-)
-target_link_libraries(mbmalloc Foundation icucore WTF)
