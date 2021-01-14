@@ -37,15 +37,13 @@ include_directories(
 mig(wtf/mac/MachExceptions.defs)
 
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/${DARLING_SDK_RELATIVE_PATH}/usr/include/wtf/mac")
-file(CREATE_LINK
-	"${DARLING_ROOT_RELATIVE_TO_SDK}/../../../src/external/wtf/mac/MachExceptions.h"
+create_symlink(
+	"${DARLING_ROOT_RELATIVE_TO_SDK}/../../../../src/external/WTF/wtf/mac/MachExceptions.h"
 	"${CMAKE_BINARY_DIR}/${DARLING_SDK_RELATIVE_PATH}/usr/include/wtf/mac/MachExceptions.h"
-	SYMBOLIC
 )
-file(CREATE_LINK
-	"${DARLING_ROOT_RELATIVE_TO_SDK}/../../../src/external/wtf/mac/MachExceptionsServer.h"
+create_symlink(
+	"${DARLING_ROOT_RELATIVE_TO_SDK}/../../../../src/external/WTF/wtf/mac/MachExceptionsServer.h"
 	"${CMAKE_BINARY_DIR}/${DARLING_SDK_RELATIVE_PATH}/usr/include/wtf/mac/MachExceptionsServer.h"
-	SYMBOLIC
 )
 
 add_darling_static_library(WTF FAT SOURCES
