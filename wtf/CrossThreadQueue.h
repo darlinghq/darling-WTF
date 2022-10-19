@@ -36,7 +36,8 @@
 namespace WTF {
 
 template<typename DataType>
-class CrossThreadQueue {
+class CrossThreadQueue final {
+    WTF_MAKE_FAST_ALLOCATED;
     WTF_MAKE_NONCOPYABLE(CrossThreadQueue);
 public:
     CrossThreadQueue() = default;
@@ -79,6 +80,8 @@ DataType CrossThreadQueue<DataType>::waitForMessage()
 
         m_condition.wait(m_lock);
     }
+    if (m_killed)
+        return { };
 
     return m_queue.takeFirst();
 }

@@ -25,18 +25,17 @@
 
 #pragma once
 
-#include <wtf/DumbPtrTraits.h>
 #include <wtf/FastMalloc.h>
 #include <wtf/Noncopyable.h>
 #include <wtf/Packed.h>
+#include <wtf/RawPtrTraits.h>
 
 namespace WTF {
 
-namespace Private {
-
-template<typename T, typename PassedPtrTraits = DumbPtrTraits<T>>
+DECLARE_ALLOCATOR_WITH_HEAP_IDENTIFIER(BagNode);
+template<typename T, typename PassedPtrTraits = RawPtrTraits<T>>
 class BagNode {
-    WTF_MAKE_FAST_ALLOCATED;
+    WTF_MAKE_FAST_ALLOCATED_WITH_HEAP_IDENTIFIER(BagNode);
 public:
     using PtrTraits = typename PassedPtrTraits::template RebindTraits<BagNode>;
 
@@ -49,13 +48,11 @@ public:
     typename PtrTraits::StorageType m_next { nullptr };
 };
 
-} // namespace Private
-
-template<typename T, typename PassedPtrTraits = DumbPtrTraits<T>>
-class Bag {
+template<typename T, typename PassedPtrTraits = RawPtrTraits<T>>
+class Bag final {
     WTF_MAKE_NONCOPYABLE(Bag);
     WTF_MAKE_FAST_ALLOCATED;
-    using Node = Private::BagNode<T, PassedPtrTraits>;
+    using Node = BagNode<T, PassedPtrTraits>;
     using PtrTraits = typename PassedPtrTraits::template RebindTraits<Node>;
 
 public:
@@ -95,6 +92,7 @@ public:
     }
     
     class iterator {
+        WTF_MAKE_FAST_ALLOCATED;
     public:
         iterator()
             : m_node(0)
