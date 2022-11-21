@@ -50,10 +50,12 @@ add_darling_static_library(WTF FAT SOURCES
 	wtf/ASCIICType.cpp
 	wtf/Assertions.cpp
 	wtf/AutomaticThread.cpp
+	wtf/Bag.cpp
 	wtf/BitVector.cpp
 	wtf/BlockObjCExceptions.mm
 	wtf/ClockType.cpp
 	wtf/CompilationThread.cpp
+	wtf/ConcurrentBuffer.cpp
 	wtf/ConcurrentPtrHashSet.cpp
 	wtf/CountingLock.cpp
 	wtf/CPUTime.cpp
@@ -64,6 +66,7 @@ add_darling_static_library(WTF FAT SOURCES
 	wtf/CurrentTime.cpp
 	wtf/DataLog.cpp
 	wtf/DateMath.cpp
+	wtf/DebugHeap.cpp
 	wtf/dtoa.cpp
 	wtf/FastBitVector.cpp
 	wtf/FastMalloc.cpp
@@ -82,16 +85,17 @@ add_darling_static_library(WTF FAT SOURCES
 	wtf/LockedPrintStream.cpp
 	wtf/Logger.cpp
 	wtf/MainThread.cpp
-	wtf/MD5.cpp
 	wtf/MediaTime.cpp
 	wtf/MemoryPressureHandler.cpp
 	wtf/MetaAllocator.cpp
 	wtf/MonotonicTime.cpp
 	wtf/NumberOfCores.cpp
 	wtf/ObjectIdentifier.cpp
+	wtf/OSLogPrintStream.cpp
 	wtf/OSRandomSource.cpp
 	wtf/PageBlock.cpp
 	wtf/ParallelHelperPool.cpp
+	wtf/ParallelJobsGeneric.cpp
 	wtf/ParkingLot.cpp
 	wtf/PlatformRegisters.cpp
 	wtf/PrintStream.cpp
@@ -101,49 +105,63 @@ add_darling_static_library(WTF FAT SOURCES
 	wtf/RandomDevice.cpp
 	wtf/RandomNumber.cpp
 	wtf/ReadWriteLock.cpp
+	wtf/RefCounted.cpp
+	wtf/RefCountedArray.cpp
 	wtf/RefCountedLeakCounter.cpp
 	wtf/RunLoop.cpp
 	wtf/Seconds.cpp
+	wtf/SegmentedVector.cpp
 	wtf/SHA1.cpp
 	wtf/SixCharacterHash.cpp
 	wtf/SizeLimits.cpp
+	wtf/SmallPtrSet.cpp
 	wtf/StackBounds.cpp
 	wtf/StackPointer.cpp
 	wtf/StackStats.cpp
 	wtf/StackTrace.cpp
+	wtf/StdFilesystem.cpp
 	wtf/StringPrintStream.cpp
 	wtf/ThreadGroup.cpp
 	wtf/Threading.cpp
 	wtf/ThreadMessage.cpp
 	wtf/TimeWithDynamicClockType.cpp
 	wtf/TimingScope.cpp
+	wtf/TranslatedProcess.cpp
+	wtf/UniqueArray.cpp
 	wtf/URL.cpp
 	wtf/URLHelpers.cpp
 	wtf/URLParser.cpp
 	wtf/UUID.cpp
+	wtf/Vector.cpp
 	wtf/WallTime.cpp
 	wtf/WordLock.cpp
 	wtf/WorkerPool.cpp
 	wtf/WorkQueue.cpp
 	wtf/WTFAssertions.cpp
+	wtf/WTFConfig.cpp
 
 	wtf/cf/CFURLExtras.cpp
 	wtf/cf/FileSystemCF.cpp
 	wtf/cf/LanguageCF.cpp
 	wtf/cf/RunLoopCF.cpp
-	wtf/cf/RunLoopTimerCF.cpp
 	wtf/cf/SchedulePairCF.cpp
 	wtf/cf/URLCF.cpp
 
 	wtf/cocoa/AutodrainedPool.cpp
 	wtf/cocoa/CPUTimeCocoa.cpp
+	wtf/cocoa/CrashReporter.cpp
 	wtf/cocoa/Entitlements.mm
 	wtf/cocoa/FileSystemCocoa.mm
+	wtf/cocoa/LanguageCocoa.mm
+	wtf/cocoa/MachSemaphore.cpp
 	wtf/cocoa/MachSendRight.cpp
 	wtf/cocoa/MainThreadCocoa.mm
 	wtf/cocoa/MemoryFootprintCocoa.cpp
 	wtf/cocoa/MemoryPressureHandlerCocoa.mm
 	wtf/cocoa/NSURLExtras.mm
+	wtf/cocoa/ResourceUsageCocoa.cpp
+	wtf/cocoa/RuntimeApplicationChecksCocoa.cpp
+	wtf/cocoa/SystemTracingCocoa.cpp
 	wtf/cocoa/URLCocoa.mm
 	wtf/cocoa/WorkQueueCocoa.cpp
 
@@ -158,7 +176,6 @@ add_darling_static_library(WTF FAT SOURCES
 
 	wtf/ios/WebCoreThread.cpp
 
-	wtf/mac/DeprecatedSymbolsUsedBySafari.mm
 	wtf/mac/FileSystemMac.mm
 	wtf/mac/SchedulePairMac.mm
 
@@ -180,7 +197,9 @@ add_darling_static_library(WTF FAT SOURCES
 	wtf/text/Base64.cpp
 	wtf/text/CString.cpp
 	wtf/text/ExternalStringImpl.cpp
+	wtf/text/LineBreakIteratorPoolICU.cpp
 	wtf/text/LineEnding.cpp
+	wtf/text/StringBuffer.cpp
 	wtf/text/StringBuilder.cpp
 	wtf/text/StringBuilderJSON.cpp
 	wtf/text/StringImpl.cpp
@@ -213,5 +232,55 @@ add_darling_static_library(WTF FAT SOURCES
 	wtf/unicode/UTF8Conversion.cpp
 
 	wtf/unicode/icu/CollatorICU.cpp
+	wtf/unicode/icu/ICUHelpers.cpp
+
+	# benchmarks/ConditionSpeedTest.cpp
+	# benchmarks/HashSetDFGReplay.cpp
+	# benchmarks/LockFairnessTest.cpp
+	# benchmarks/LockSpeedTest.cpp
+	
+	# wtf/generic/MainThreadGeneric.cpp
+	# wtf/generic/MemoryFootprintGeneric.cpp
+	# wtf/generic/MemoryPressureHandlerGeneric.cpp
+	# wtf/generic/RunLoopGeneric.cpp
+	# wtf/generic/WorkQueueGeneric.cpp
+
+	# wtf/glib/ChassisType.cpp
+	# wtf/glib/FileSystemGlib.cpp
+	# wtf/glib/GLibUtilities.cpp
+	# wtf/glib/GRefPtr.cpp
+	# wtf/glib/GSocketMonitor.cpp
+	# wtf/glib/RunLoopGLib.cpp
+	# wtf/glib/SocketConnection.cpp
+	# wtf/glib/URLGLib.cpp
+
+	# wtf/linux/CurrentProcessMemoryStatus.cpp
+	# wtf/linux/MemoryFootprintLinux.cpp
+
+	# wtf/playstation/LanguagePlayStation.cpp
+	# wtf/playstation/UniStdExtrasPlayStation.cpp
+
+	# wtf/text/win/StringWin.cpp
+	# wtf/text/win/TextBreakIteratorInternalICUWin.cpp
+
+	# wtf/unix/CPUTimeUnix.cpp
+	# wtf/unix/LanguageUnix.cpp
+	# wtf/unix/MemoryPressureHandlerUnix.cpp
+	# wtf/unix/UniStdExtrasUnix.cpp
+
+	# wtf/win/CPUTimeWin.cpp
+	# wtf/win/DbgHelperWin.cpp
+	# wtf/win/FileSystemWin.cpp
+	# wtf/win/LanguageWin.cpp
+	# wtf/win/MainThreadWin.cpp
+	# wtf/win/MemoryFootprintWin.cpp
+	# wtf/win/MemoryPressureHandlerWin.cpp
+	# wtf/win/OSAllocatorWin.cpp
+	# wtf/win/PathWalker.cpp
+	# wtf/win/RunLoopWin.cpp
+	# wtf/win/ThreadingWin.cpp
+
+	# wtf/fuchsia/CPUTimeFuchsia.cpp
+	# wtf/text/unix/TextBreakIteratorInternalICUUnix.cpp
 )
 target_link_libraries(WTF bmalloc)
