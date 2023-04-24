@@ -29,7 +29,7 @@ include_directories(
 
 	# technically, we don't need this
 	# the SDK has symlinks for these already
-	${CMAKE_CURRENT_SOURCE_DIR}/include
+	${CMAKE_CURRENT_SOURCE_DIR}/darling/include
 
 	${CMAKE_CURRENT_BINARY_DIR}/wtf/mac
 )
