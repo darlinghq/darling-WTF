@@ -1,7 +1,6 @@
 list(APPEND WTF_SOURCES
     generic/MainThreadGeneric.cpp
     generic/MemoryFootprintGeneric.cpp
-    generic/MemoryPressureHandlerGeneric.cpp
     generic/RunLoopGeneric.cpp
     generic/WorkQueueGeneric.cpp
 
@@ -15,13 +14,15 @@ list(APPEND WTF_SOURCES
     text/unix/TextBreakIteratorInternalICUUnix.cpp
 
     unix/CPUTimeUnix.cpp
-    unix/LanguageUnix.cpp
+    unix/MemoryPressureHandlerUnix.cpp
 )
 
 list(APPEND WTF_LIBRARIES
-    ${CMAKE_THREAD_LIBS_INIT}
-    ${ICU_LIBRARIES}
-
-    ${C_STD_LIBRARY}
     ${KERNEL_LIBRARY}
+    Threads::Threads
+)
+
+PLAYSTATION_COPY_SHARED_LIBRARIES(WTF_CopySharedLibs
+    FILES
+        ${ICU_LIBRARIES}
 )
