@@ -52,7 +52,11 @@ constexpr unsigned urlBytesBufferLength = 2048;
 //    WebKit was compiled.
 // This is only really important for platforms that load an external IDN allowed script list.
 // Not important for the compiled-in one.
+#ifdef DARLING
+constexpr auto scriptCodeLimit = static_cast<UScriptCode>(255);
+#else
 constexpr auto scriptCodeLimit = static_cast<UScriptCode>(256);
+#endif
 
 static uint32_t allowedIDNScriptBits[(scriptCodeLimit + 31) / 32];
 
